@@ -1,0 +1,97 @@
+# HTTP - redirect all requests to HTTPS:
+server {
+        listen 80;
+        listen [::]:80 default_server ipv6only=on;
+        return 301 https://$host$request_uri;
+}
+
+# HTTPS - proxy requests on to local Node.js app:
+server {
+
+    listen 443;
+    server_name admitkard.com;
+
+    ssl on;
+    # Use certificate and key provided by Let's Encrypt:
+    ssl_certificate   /etc/letsencrypt/live/admitkard.com/fullchain.pem;
+    ssl_certificate_key  /etc/letsencrypt/live/admitkard.com/privkey.pem;
+    ssl_session_timeout 5m;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+    root /home/ubuntu;
+
+    # Pass requests for / to localhost:8080:
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_pass http://localhost:8080/;
+    }
+
+    #location /mock-test-login{
+        #return 301 http://$host$request_uri;
+    #}
+     
+    location /blog {
+        index index.php;
+        try_files $uri $uri/ /blog/index.php?q=$uri$args;
+        #proxy_pass http://localhost:8080/;
+    }
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $request_filename;
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+        include /etc/nginx/snippets/fastcgi-php.conf;
+    }
+}
+
+server {
+        listen 443;
+        server_name blog.admitkard.com;
+
+        ssl on;
+        # Use certificate and key provided by Let's Encrypt:
+        ssl_certificate /etc/letsencrypt/live/blog.admitkard.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/blog.admitkard.com/privkey.pem;
+        ssl_session_timeout 5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+
+        # Pass requests for / to localhost:8081:
+        location / {
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_pass http://localhost:8080/;
+        }
+}
+
+
+
+server {
+        listen 443;
+        server_name data.admitkard.com;
+
+        ssl on;
+        # Use certificate and key provided by Let's Encrypt:
+        ssl_certificate /etc/letsencrypt/live/data.admitkard.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/data.admitkard.com/privkey.pem;
+        ssl_session_timeout 5m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+
+        # Pass requests for / to localhost:8081:
+        location / {
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_pass http://localhost:8081/;
+        }
+}
+
