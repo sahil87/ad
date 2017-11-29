@@ -1,8 +1,17 @@
 # HTTP - redirect all requests to HTTPS:
 server {
-        listen 80;
-        listen [::]:80 default_server ipv6only=on;
+    listen 80;
+    listen [::]:80 default_server ipv6only=on;
+
+    location /mock-test-login {
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_pass http://localhost:8080/;
+    }
+
+    location / {
         return 301 https://$host$request_uri;
+    }
 }
 
 # HTTPS - proxy requests on to local Node.js app:
@@ -30,9 +39,9 @@ server {
         proxy_pass http://localhost:8080/;
     }
 
-    #location /mock-test-login{
-        #return 301 http://$host$request_uri;
-    #}
+    location /mock-test-login {
+        return 301 http://$host$request_uri;
+    }
      
     location /blog {
         index index.php;
